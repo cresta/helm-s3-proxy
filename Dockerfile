@@ -8,7 +8,7 @@ WORKDIR /work
 
 # Create appuser
 ENV USER=appuser
-ENV UID=10001
+ENV UID=1000
 RUN groupadd -r --gid ${UID} ${USER} && useradd --uid ${UID} -m --no-log-init -g ${USER} ${USER}
 
 # Install mage

@@ -7,12 +7,16 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/cresta/helm-s3-proxy/internal/handler"
+
 	"github.com/cresta/gotracing"
 	"github.com/cresta/gotracing/datadog"
 	"github.com/cresta/httpsimple"
 	"github.com/cresta/zapctx"
 	"github.com/gorilla/mux"
-	"github.com/signalfx/golib/v3/httpdebug"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -22,6 +26,8 @@ type config struct {
 	DebugListenAddr string
 	Tracer          string
 	LogLevel        string
+	S3Bucket        string
+	ReplaceHTTPPath string
 }
 
 func (c config) WithDefaults() config {
@@ -46,7 +52,9 @@ func getConfig() config {
 		// Allows you to use a dynamic tracer
 		Tracer: os.Getenv("TRACER"),
 		// Level to log at
-		LogLevel: os.Getenv("LOG_LEVEL"),
+		LogLevel:        os.Getenv("LOG_LEVEL"),
+		S3Bucket:        os.Getenv("S3_BUCKET"),
+		ReplaceHTTPPath: os.Getenv("REPLACE_HTTP_PATH"),
 	}.WithDefaults()
 }
 
@@ -114,8 +122,13 @@ func (m *Service) Main() {
 	ctx := context.Background()
 	m.log = m.log.DynamicFields(rootTracer.DynamicFields()...)
 
-	m.server = m.setupServer(cfg, m.log, rootTracer)
-	shutdownCallback, err := setupDebugServer(m.log, cfg.DebugListenAddr, m)
+	m.server, err = m.setupServer(cfg, m.log, rootTracer)
+	if err != nil {
+		m.log.IfErr(err).Panic(context.Background(), "unable to setup HTTP server")
+		m.osExit(1)
+		return
+	}
+	shutdownCallback, err := setupDebugServer(m.log, cfg.DebugListenAddr)
 	if err != nil {
 		m.log.IfErr(err).Panic(context.Background(), "unable to setup debug server")
 		m.osExit(1)
@@ -123,43 +136,60 @@ func (m *Service) Main() {
 	}
 	m.log.Info(ctx, "Listening on HTTP", zap.String("addr", m.config.ListenAddr))
 	serveErr := httpsimple.BasicServerRun(m.log, m.server, m.onListen, m.config.ListenAddr)
-	shutdownCallback()
+	if err := shutdownCallback(ctx); err != nil {
+		m.log.IfErr(err).Error(ctx, "unable to shutdown debug server")
+	}
 	if serveErr != nil {
 		m.osExit(1)
 	}
 }
 
-func (m *Service) setupServer(cfg config, log *zapctx.Logger, tracer gotracing.Tracing) *http.Server {
+func (m *Service) setupServer(cfg config, log *zapctx.Logger, tracer gotracing.Tracing) (*http.Server, error) {
 	rootHandler := mux.NewRouter()
 	rootHandler.Handle("/health", httpsimple.HealthHandler(log, tracer))
+	sess, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to create aws session: %w", err)
+	}
+	stsClient := sts.New(sess)
+	resp, err := stsClient.GetCallerIdentityWithContext(context.Background(), &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to get caller identity: %w", err)
+	}
+	log.Info(context.Background(), "Got identity", zap.String("identity", *resp.Account))
+
+	bh := handler.BucketHandler{
+		Bucket:          m.config.S3Bucket,
+		ReplaceHTTPPath: m.config.ReplaceHTTPPath,
+		Downloader:      s3manager.NewDownloader(sess),
+		Log:             m.log.With(zap.String("section", "bucket_handler")),
+	}
+	if err := bh.Setup(rootHandler); err != nil {
+		return nil, fmt.Errorf("unable to setup bucket handler: %w", err)
+	}
 	return &http.Server{
 		Addr:    cfg.ListenAddr,
 		Handler: rootHandler,
-	}
+	}, nil
 }
 
-func setupDebugServer(l *zapctx.Logger, listenAddr string, obj interface{}) (func(), error) {
+func setupDebugServer(l *zapctx.Logger, listenAddr string) (func(ctx context.Context) error, error) {
 	if listenAddr == "" || listenAddr == "-" {
-		return func() {
-		}, nil
+		return func(_ context.Context) error { return nil }, nil
 	}
-	ret := httpdebug.New(&httpdebug.Config{
-		Logger:        &zapctx.FieldLogger{Logger: l},
-		ExplorableObj: obj,
-	})
-	ln, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		return nil, fmt.Errorf("unable to listen to %s: %w", listenAddr, err)
+	s := httpsimple.DebugServer{
+		Logger:     l,
+		ListenAddr: listenAddr,
+	}
+	if err := s.Setup(); err != nil {
+		return nil, err
 	}
 	go func() {
-		serveErr := ret.Server.Serve(ln)
-		if serveErr != http.ErrServerClosed {
-			l.IfErr(serveErr).Error(context.Background(), "debug server existed")
+		if err := s.Start(); err != nil {
+			l.IfErr(err).Warn(context.Background(), "debug server crashed")
 		}
-		l.Info(context.Background(), "debug server finished")
 	}()
-	return func() {
-		err := ln.Close()
-		l.IfErr(err).Warn(context.Background(), "unable to close listening socket for debug server")
-	}, nil
+	return s.Shutdown, nil
 }
