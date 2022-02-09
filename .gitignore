@@ -1,6 +1,3 @@
 /main
-/*.pem
-/*.ppk
-test-repo-config.yaml
-/gitops-autobot.yaml
 /charts/*/*.tgz
+/.idea
