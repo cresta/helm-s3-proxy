@@ -113,11 +113,6 @@ func (m *Service) Main() {
 
 	ctx := context.Background()
 	m.log = m.log.DynamicFields(rootTracer.DynamicFields()...)
-	if err := m.injection(ctx, rootTracer); err != nil {
-		m.log.IfErr(err).Panic(ctx, "unable to inject starting variables")
-		m.osExit(1)
-		return
-	}
 
 	m.server = m.setupServer(cfg, m.log, rootTracer)
 	shutdownCallback, err := setupDebugServer(m.log, cfg.DebugListenAddr, m)
@@ -132,12 +127,6 @@ func (m *Service) Main() {
 	if serveErr != nil {
 		m.osExit(1)
 	}
-}
-
-func (m *Service) injection(ctx context.Context, tracer gotracing.Tracing) error {
-	m.log.Info(ctx, "<-injection")
-	defer m.log.Info(ctx, "->injection")
-	return nil
 }
 
 func (m *Service) setupServer(cfg config, log *zapctx.Logger, tracer gotracing.Tracing) *http.Server {
