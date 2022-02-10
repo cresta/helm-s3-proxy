@@ -2,6 +2,12 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+
+log_level: info
+tracer: datadog
+s3_bucket: ""
+replace_http_path: ""
+
 replicaCount: 1
 
 image:

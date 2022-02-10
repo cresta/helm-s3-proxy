@@ -29,6 +29,25 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
+          env:
+            {{- range .Values.image.env }}
+            - {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- include "cresta-lib.datadog-env" . | nindent 12 }}
+            - name: SERVICE_NAME
+              value: "helm-s3-proxy"
+            - name: DD_TRACE_AGENT_URL
+              value: unix://var/run/datadog/apm.socket
+            - name: DD_DOGSTATSD_SOCKET
+              value: /var/run/datadog/dsd.socket
+            - name: LOG_LEVEL
+              value: {{ .Values.log_level }}
+            - name: TRACER
+              value: {{ .Values.tracer | quote }}
+            - name: S3_BUCKET
+              value: {{ .Values.s3_bucket | quote }}
+            - name: REPLACE_HTTP_PATH
+              value: {{ .Values.replace_http_path | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -39,14 +58,18 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: dsdsocket
+              mountPath: /var/run/datadog
+              readOnly: true
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -59,3 +82,7 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - hostPath:
+            path: /var/run/datadog/
+          name: dsdsocket
