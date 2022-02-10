@@ -6,7 +6,7 @@ on:
       - charts/**
       - .github/workflows/helm.yml
     branches:
-      - master
+      - main
 
 jobs:
   release:
