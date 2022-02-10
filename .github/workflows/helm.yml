@@ -29,8 +29,10 @@ jobs:
         run: ct lint --all
       - name: Create kind cluster
         uses: helm/kind-action@v1.2.0
-      - name: Run chart-testing (install)
-        run: ct install --all
+      - name: Helm package
+        run: helm package charts/helm-s3-proxy --destination .
+      - name: Run install
+        run: helm install helm-s3-proxy *.tgz
       - name: Remove helm chart
         run:  helm uninstall helm-s3-proxy
       - name: Run chart-releaser
