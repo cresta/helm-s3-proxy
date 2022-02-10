@@ -33,7 +33,6 @@ spec:
             {{- range .Values.image.env }}
             - {{- toYaml . | nindent 14 }}
             {{- end }}
-            {{- include "cresta-lib.datadog-env" . | nindent 12 }}
             - name: SERVICE_NAME
               value: "helm-s3-proxy"
             - name: DD_TRACE_AGENT_URL
