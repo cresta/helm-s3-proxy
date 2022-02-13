@@ -8,6 +8,8 @@ log_level: info
 s3_bucket: ""
 # The HTTP path of your proxy: will replace URLs with this path
 replace_http_path: ""
+# Currently only supports datadog :/
+tracer: ""
 
 replicaCount: 1
 
