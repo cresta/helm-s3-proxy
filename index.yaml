@@ -3,6 +3,19 @@ entries:
   helm-s3-proxy:
   - apiVersion: v2
     appVersion: 0.0.2
+    created: "2022-02-13T19:02:56.565886356Z"
+    description: A Helm chart for Kubernetes
+    digest: 3ca5e1bb064fe1c17ca2b8734e7d6c9abca16f1e4a54bab342c32e670505893f
+    maintainers:
+    - name: Jack
+      url: https://github.com/cep21
+    name: helm-s3-proxy
+    type: application
+    urls:
+    - https://github.com/cresta/helm-s3-proxy/releases/download/helm-s3-proxy-0.1.8/helm-s3-proxy-0.1.8.tgz
+    version: 0.1.8
+  - apiVersion: v2
+    appVersion: 0.0.2
     created: "2022-02-13T18:54:04.781553062Z"
     description: A Helm chart for Kubernetes
     digest: 3ca6e98e3312a8e879313134f3284aac3ea96e9279ae5602d4e97ceb10566be8
@@ -40,4 +53,4 @@ entries:
     urls:
     - https://github.com/cresta/helm-s3-proxy/releases/download/helm-s3-proxy-0.1.5/helm-s3-proxy-0.1.5.tgz
     version: 0.1.5
-generated: "2022-02-13T18:54:04.781763862Z"
+generated: "2022-02-13T19:02:56.565910556Z"
