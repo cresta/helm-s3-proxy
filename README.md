@@ -99,7 +99,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: helm-s3-proxy
-      version: 0.1.7
+      version: 0.1.8
   interval: 1m0s
   releaseName: helm-s3-proxy
   values:
