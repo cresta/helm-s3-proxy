@@ -2,10 +2,11 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-
+# Log level (debug/warning/info)
 log_level: info
-tracer: datadog
+# S3 bucket to read from
 s3_bucket: ""
+# The HTTP path of your proxy: will replace URLs with this path
 replace_http_path: ""
 
 replicaCount: 1
