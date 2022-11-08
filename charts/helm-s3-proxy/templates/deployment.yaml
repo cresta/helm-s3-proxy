@@ -47,6 +47,10 @@ spec:
               value: {{ .Values.s3_bucket | quote }}
             - name: REPLACE_HTTP_PATH
               value: {{ .Values.replace_http_path | quote }}
+            {{- if .Values.region }}
+            - name: AWS_REGION
+              value: {{ .Values.region }}
+            {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
