@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -170,8 +171,9 @@ func (m *Service) setupServer(cfg config, log *zapctx.Logger, tracer gotracing.T
 		return nil, fmt.Errorf("unable to setup bucket handler: %w", err)
 	}
 	return &http.Server{
-		Addr:    cfg.ListenAddr,
-		Handler: rootHandler,
+		Addr:              cfg.ListenAddr,
+		Handler:           rootHandler,
+		ReadHeaderTimeout: 2 * time.Second,
 	}, nil
 }
 

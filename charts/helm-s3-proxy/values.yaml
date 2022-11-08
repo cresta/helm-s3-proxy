@@ -6,6 +6,8 @@
 log_level: info
 # S3 bucket to read from
 s3_bucket: ""
+# region of the S3 bucket
+region: ""
 # The HTTP path of your proxy: will replace URLs with this path
 replace_http_path: ""
 # Currently only supports datadog :/
