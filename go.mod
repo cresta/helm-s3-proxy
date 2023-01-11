@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-go v4.8.0+incompatible // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20220113124808-70ae35bab23f // indirect
-	github.com/aws/aws-sdk-go v1.27.0
+	github.com/aws/aws-sdk-go v1.33.0
 	github.com/cresta/gotracing v0.2.2
 	github.com/cresta/httpsimple v0.0.2
 	github.com/cresta/magehelper v0.0.58
