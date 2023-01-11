@@ -28,7 +28,7 @@ jobs:
       - name: Run chart-testing (lint)
         run: ct lint --all
       - name: Create kind cluster
-        uses: helm/kind-action@v1.2.0
+        uses: helm/kind-action@v1.5.0
       - name: Helm package
         run: helm package charts/helm-s3-proxy --destination .
       - name: Run install
